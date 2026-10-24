@@ -1,8 +1,9 @@
 from flask import Flask
 from flask import render_template
 
-
 import db_action.mysql_init
+
+
 
 app = Flask(__name__)
 

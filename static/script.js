@@ -1,100 +1,4 @@
 // Simple In-Browser N-Gram (Markov Chain) Language Model
-class NextWordPredictor {
-    constructor() {
-        this.model = {}; // Map of "word1 word2" -> { "word3": count, total: N }
-        this.totalWords = 0;
-        this.isTrained = false;
-    }
-
-    train(text) {
-        // Clean and tokenize text into words, preserving lowercase for consistency
-        const tokens = text.toLowerCase()
-            .replace(/[^\w\s\']/g, ' ')
-            .split(/\s+/)
-            .filter(token => token.length > 0);
-
-        this.totalWords = tokens.length;
-        this.model = {};
-
-        // Build Bigram / Trigram model
-        for (let i = 0; i < tokens.length - 1; i++) {
-            const w1 = tokens[i];
-            const w2 = tokens[i + 1];
-            
-            // Bigram tracking
-            if (!this.model[w1]) {
-                this.model[w1] = { _total: 0 };
-            }
-            this.model[w1]._total++;
-            this.model[w1][w2] = (this.model[w1][w2] || 0) + 1;
-
-            // Trigram tracking (context: "w1 w2")
-            if (i < tokens.length - 2) {
-                const w3 = tokens[i + 2];
-                const context2 = `${w1} ${w2}`;
-                if (!this.model[context2]) {
-                    this.model[context2] = { _total: 0 };
-                }
-                this.model[context2]._total++;
-                this.model[context2][w3] = (this.model[context2][w3] || 0) + 1;
-            }
-        }
-
-        this.isTrained = true;
-        return {
-            totalWords: this.totalWords,
-            uniqueNgrams: Object.keys(this.model).length
-        };
-    }
-
-    predict(inputString, topK = 5) {
-        if (!this.isTrained) return [];
-
-        const cleanInput = inputString.toLowerCase()
-            .replace(/[^\w\s\']/g, ' ')
-            .trim()
-            .split(/\s+/);
-
-        if (cleanInput.length === 0 || (cleanInput.length === 1 && cleanInput[0] === '')) {
-            return [];
-        }
-
-        let candidates = null;
-
-        // Try Trigram lookup first (last 2 words)
-        if (cleanInput.length >= 2) {
-            const w1 = cleanInput[cleanInput.length - 2];
-            const w2 = cleanInput[cleanInput.length - 1];
-            const context2 = `${w1} ${w2}`;
-            if (this.model[context2]) {
-                candidates = this.model[context2];
-            }
-        }
-
-        // Fallback to Bigram lookup (last 1 word) if no trigram match
-        if (!candidates && cleanInput.length >= 1) {
-            const w1 = cleanInput[cleanInput.length - 1];
-            if (this.model[w1]) {
-                candidates = this.model[w1];
-            }
-        }
-
-        if (!candidates) return [];
-
-        // Sort candidates by frequency
-        const total = candidates._total;
-        const predictions = Object.keys(candidates)
-            .filter(word => word !== '_total')
-            .map(word => ({
-                word: word,
-                probability: candidates[word] / total
-            }))
-            .sort((a, b) => b.probability - a.probability)
-            .slice(0, topK);
-
-        return predictions;
-    }
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
@@ -147,3 +51,108 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// ********************************************************************************
+// ********************************************************************************
+
+// Grab the elements from your interface
+const userInput = document.getElementById('user-input');
+const predictionsContainer = document.querySelector('.predictions-container') || createPredictionsContainer();
+
+let debounceTimer = null;
+
+// Listen for typing events
+userInput.addEventListener('input', () => {
+    const text = userInput.value;
+
+    // Clear any existing timer so we don't spam requests on every single keystroke
+    clearTimeout(debounceTimer);
+
+    if (!text.trim()) {
+        predictionsContainer.innerHTML = '<span class="placeholder-text">Upload a text file and start typing to see predictions...</span>';
+        return;
+    }
+
+    // Debounce the API call by 300ms for smooth performance
+    debounceTimer = setTimeout(async () => {
+    try {
+        // 1. Clean and split the text into words
+        const trimmedText = text.trim();
+        const words = trimmedText ? trimmedText.split(/\s+/) : [];
+
+        // 2. Determine current and previous words
+        let currentWord = "";
+        let previousWord = " "; // Default to space if first word
+
+        // Check if user is currently typing a new word (ends with a space) or is mid-word
+        const endsWithSpace = text.endsWith(" ");
+
+        if (words.length > 0) {
+            if (endsWithSpace) {
+                // If text ends with a space, the last word is complete, 
+                // and the *new* current word is effectively empty.
+                previousWord = words[words.length - 1];
+                currentWord = "";
+            } else {
+                // Mid-typing a word
+                currentWord = words[words.length - 1];
+                if (words.length > 1) {
+                    previousWord = words[words.length - 2];
+                }
+            }
+        }
+
+        // 3. Send both to the backend
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                current_word: currentWord, 
+                previous_word: previousWord 
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            renderPredictions(data.predictions || []); // Expecting an array of 0-5 words
+        } else {
+            console.error('Prediction failed');
+        }
+    } catch (error) {
+        console.error('Network error during prediction:', error);
+    }
+}, 300);
+});
+
+// Helper function to display the predicted words as clickable pills/buttons
+// Helper function to display the predicted words as clickable pills/buttons
+function renderPredictions(predictions) {
+    // Use the global variable directly instead of getElementById
+    const container = predictionsContainer; 
+    
+    // Check if the object is empty
+    const entries = Object.entries(predictions || {});
+    if (entries.length === 0) {
+        container.innerHTML = '<span class="placeholder-text">No predictions found</span>';
+        return;
+    }
+
+    // Convert object entries [word, count] into HTML elements
+    container.innerHTML = entries.map(([word, count]) => `
+        <button class="prediction-chip">
+            <span class="word">${word}</span>
+            <span class="count">(${count})</span>
+        </button>
+    `).join('');
+}
+
+// Helper to create the container dynamically if it doesn't exist in HTML yet
+function createPredictionsContainer() {
+    const section = document.querySelector('.inference-section') || userInput.parentElement;
+    const container = document.createElement('div');
+    container.className = 'predictions-container';
+    section.appendChild(container);
+    return container;
+}

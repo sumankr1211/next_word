@@ -4,6 +4,7 @@ import db_action.init_mysql as db_init
 import db_action.init_table as tb_init
 import db_action.learning as learn
 import db_action.train_mysql as train
+import db_action.predict as predict
 
 app = Flask(__name__)
 
@@ -23,7 +24,7 @@ def upload_file():
     file = request.files['text_file']
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
-    if file and file.filename.endswith('.txt'):
+    if file and file.filename.endswith('.txt'): #type: ignore
         
         # --- YOUR BACKEND LOGIC HERE ---
         print("Starting to train my db")
@@ -36,6 +37,19 @@ def upload_file():
             'message': 'File successfully received by backend!'
         })
     return jsonify({'error': 'Invalid file format. Only .txt allowed'}), 400
+
+
+@app.route('/predict', methods=["POST"])
+def predict_next_words():
+    global last_word
+    data = request.get_json()
+    print(data)
+    current_word = data['current_word']
+    previous_word = data['previous_word']
+
+    my_dict = predict.predict_next_word(previous_word ,current_word )
+    print(my_dict)
+    return jsonify(my_dict), 500
 
 
 if __name__ == "__main__":

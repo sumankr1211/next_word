@@ -9,11 +9,15 @@ def init_table():
     INDEX word(word)
     );
     """
+
+    
     create_table_query2 = """
     CREATE TABLE IF NOT EXISTS  next_word(
     prev_id INT ,
     current_id INT ,
     count INT,
+
+    PRIMARY KEY (prev_id, current_id),
 
     CONSTRAINT fk_id
         FOREIGN KEY (prev_id)
@@ -31,6 +35,17 @@ def init_table():
     result = db_init.my_cursor.fetchall()
     print(f"result from initing table 1 : {result}")
 
-    db_init.my_cursor.execute(create_table_query1)
+    db_init.my_cursor.execute(create_table_query2)
     result = db_init.my_cursor.fetchall()
     print(f"result from initing table 2 : {result}")
+
+
+    query3 = """
+    INSERT INTO word (id, word, count) 
+    VALUES (1, ' ', 1)
+    ON DUPLICATE KEY UPDATE count = count + 1;
+    """
+    db_init.my_cursor.execute(query3)
+    db_init.mydb.commit()
+    result = db_init.my_cursor.fetchall()
+    print("inserted [ " " ] into  table ")

@@ -1,14 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next-Word Predictor</title>
+    <link rel="stylesheet" href="static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Next-Word Predictor</h1>
+            <p class="subtitle">Upload training text on the left, type on the right to see instant next-word predictions.</p>
+        </header>
 
-    <head>
+        <main class="main-layout">
+            <!-- Left Side: Backend Input & Training -->
+            <section class="panel training-panel">
+                <div class="panel-header">
+                    <h2>1. Model Training Source</h2>
+                    <span id="model-status" class="status-badge untrained">No Data Loaded</span>
+                </div>
 
-    </head>
+                <div class="drop-zone" id="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <p>Drag & drop your <strong>.txt</strong> file here, or <label for="file-input" class="browse-btn">browse</label></p>
+                        <input type="file" id="file-input" accept=".txt" hidden>
+                    </div>
+                </div>
 
-    <body>
+                <div class="file-info" id="file-info" style="display: none;">
+                    <span id="file-name">filename.txt</span>
+                    <button id="remove-file" class="text-btn">Remove</button>
+                </div>
 
-        <h1>I am typing something here</h1>
-    </body>
+                <div class="stats-box">
+                    <h3>Corpus Statistics</h3>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Words</span>
+                            <span id="stat-words" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Unique N-Grams</span>
+                            <span id="stat-ngrams" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
+            <!-- Right Side: Typing & Predictions -->
+            <section class="panel inference-panel">
+                <div class="panel-header">
+                    <h2>2. Real-Time Inference</h2>
+                    <button id="clear-text" class="text-btn">Clear Text</button>
+                </div>
 
+                <div class="editor-container">
+                    <textarea 
+                        id="user-input" 
+                        placeholder="Type something here (e.g., 'the quick brown')..." 
+                        disabled
+                    ></textarea>
+                </div>
+
+                <div class="predictions-container">
+                    <h3>Predicted Next Words</h3>
+                    <div id="predictions-list" class="predictions-list">
+                        <span class="placeholder-hint">Upload a text file and start typing to see predictions...</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="static/script.js"></script>
+</body>
 </html>

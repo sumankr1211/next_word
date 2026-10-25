@@ -114,9 +114,10 @@ userInput.addEventListener('input', () => {
             })
         });
 
+        const result = await response.json();
+
         if (response.ok) {
-            const data = await response.json();
-            renderPredictions(data.predictions || []); // Expecting an array of 0-5 words
+            renderPredictions(result); // Expecting an dict 
         } else {
             console.error('Prediction failed');
         }

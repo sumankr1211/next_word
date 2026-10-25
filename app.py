@@ -49,7 +49,10 @@ def predict_next_words():
 
     my_dict = predict.predict_next_word(previous_word ,current_word )
     print(my_dict)
-    return jsonify(my_dict), 500
+    if my_dict != {} :
+        print("this is running")
+        return jsonify(my_dict)
+    return jsonify({"error":"nothing in json"}), 500
 
 
 if __name__ == "__main__":

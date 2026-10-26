@@ -1,5 +1,57 @@
 // Simple In-Browser N-Gram (Markov Chain) Language Model
 
+// document.addEventListener('DOMContentLoaded', () => {
+//     const fileInput = document.getElementById('file-input');
+//     const fileNameEl = document.getElementById('file-name');
+//     const fileInfo = document.getElementById('file-info');
+//     const dropZone = document.getElementById('drop-zone');
+//     const modelStatus = document.getElementById('model-status');
+//     const userInput = document.getElementById('user-input');
+
+//     fileInput.addEventListener('change', async (e) => {
+//         if (e.target.files.length) {
+//             const file = e.target.files[0];
+//             await uploadFileToBackend(file);
+//         }
+//     });
+
+//     async function uploadFileToBackend(file) {
+//         // Create a FormData object to hold the raw file
+//         const formData = new FormData();
+//         formData.append('text_file', file); // 'text_file' is the key Python will look for
+
+//         try {
+//             modelStatus.textContent = 'Uploading...';
+            
+//             // Send file to Python backend
+//             const response = await fetch('/upload', {
+//                 method: 'POST',
+//                 body: formData
+//             });
+
+//             const result = await response.json();
+
+//             if (response.ok) {
+//                 // Update UI upon successful backend receipt
+//                 fileNameEl.textContent = file.name;
+//                 dropZone.style.display = 'none';
+//                 fileInfo.style.display = 'flex';
+//                 modelStatus.textContent = 'Backend Connected';
+//                 modelStatus.className = 'status-badge trained';
+//                 userInput.disabled = false;
+                
+//                 console.log("Backend response:", result);
+//             } else {
+//                 alert('Error from backend: ' + result.error);
+//                 modelStatus.textContent = 'Upload Failed';
+//             }
+//         } catch (error) {
+//             console.error('Network error:', error);
+//             alert('Failed to connect to backend.');
+//         }
+//     }
+// });
+
 document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const fileNameEl = document.getElementById('file-name');
@@ -8,22 +60,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelStatus = document.getElementById('model-status');
     const userInput = document.getElementById('user-input');
 
+    // Listen for file selections (supports multiple files)
     fileInput.addEventListener('change', async (e) => {
-        if (e.target.files.length) {
-            const file = e.target.files[0];
-            await uploadFileToBackend(file);
+        const files = e.target.files;
+        if (files.length > 0) {
+            // Loop through each selected file and upload it
+            for (let i = 0; i < files.length; i++) {
+                await uploadFileToBackend(files[i]);
+            }
+            // Clear input value so the same files can be selected again if needed
+            fileInput.value = '';
         }
     });
 
     async function uploadFileToBackend(file) {
-        // Create a FormData object to hold the raw file
         const formData = new FormData();
-        formData.append('text_file', file); // 'text_file' is the key Python will look for
+        formData.append('text_file', file);
 
         try {
-            modelStatus.textContent = 'Uploading...';
+            modelStatus.textContent = `Uploading ${file.name}...`;
             
-            // Send file to Python backend
             const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
@@ -32,25 +88,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                // Update UI upon successful backend receipt
-                fileNameEl.textContent = file.name;
-                dropZone.style.display = 'none';
+                // Update UI to show success, but KEEP the drop zone visible for more files
+                fileNameEl.textContent = `Uploaded: ${file.name}`;
                 fileInfo.style.display = 'flex';
+                dropZone.style.display = 'block'; // Keep drop zone visible!
                 modelStatus.textContent = 'Backend Connected';
                 modelStatus.className = 'status-badge trained';
                 userInput.disabled = false;
                 
-                console.log("Backend response:", result);
+                console.log("Backend response for", file.name, ":", result);
             } else {
-                alert('Error from backend: ' + result.error);
+                alert(`Error uploading ${file.name}: ${result.error}`);
                 modelStatus.textContent = 'Upload Failed';
             }
         } catch (error) {
             console.error('Network error:', error);
-            alert('Failed to connect to backend.');
+            alert(`Failed to connect to backend for ${file.name}.`);
+            modelStatus.textContent = 'Upload Failed';
         }
     }
 });
+
 
 // ********************************************************************************
 // ********************************************************************************
